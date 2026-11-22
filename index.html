@@ -95,15 +95,26 @@
     <p><strong>PSU 額定功率（最保守）：</strong>HP 的資料提到，部分地區的大型機房依法可能必須以 PSU 最大輸出（銘牌）規劃迴路。若你的契約或規範有這類要求，請使用「額定功率」頁。</p>
   </div>
 
+  <div class="ref">
+    <h3>④ TIA-942、Uptime Tier 怎麼說（2026-11-22 查證）</h3>
+    <p><strong>這兩個標準規範的是「機房韌性等級」，不是 PDU 該載多滿。</strong>我讀到的官方側資料裡，沒有任何一處規定 PDU 或迴路的負載百分比；80% 來自電氣法規（見①）。</p>
+    <ul>
+      <li><strong>Uptime Institute Tier（官方期刊）：</strong>Tier III 的定義是「requires no shutdowns for equipment replacement and maintenance」；Tier IV 在此之上加入容錯（Fault Tolerance）。期刊並明說 Tier 系統「does not prescribe any specific technology, schematic or other design criteria beyond those resulting outcomes」，也就是只規定結果、不規定怎麼做；這篇文章沒有提到 PDU 負載或 N／N+1／2N 的數量規定。<a href="https://journal.uptimeinstitute.com/?p=3737" target="_blank" rel="noopener">Uptime：Explaining the Tier Classification System（2021 年更新）</a></li>
+      <li><strong>TIA-942（TIA 官方網站的客座文章，2025-12-10）：</strong>Rated-2 為「Some redundancy e.g. N+1 models for UPS and generators, but still many single points of failure」；Rated-3 為「concurrently maintainable」，可修理或更換電力、冷卻、佈線中的任一項而不中斷運作；Rated-4 再加上自動容錯。文章沒有提供機櫃或 PDU 的負載上限。<a href="https://tiaonline.org/aligning-the-ai-high-performance-computing-infrastructure-with-the-ansi-tia-942-ratings-resilience-model/" target="_blank" rel="noopener">TIA：Aligning the AI HPC infrastructure with the ANSI/TIA-942 Ratings</a></li>
+    </ul>
+    <p><strong>與本工具的關係 <span class="tag-me">推論</span>：</strong>「同時可維護」（Tier III／Rated-3）要求任一路電力停機維修時，其餘路徑仍能承接全部負載。本工具每櫃 5 個 PDU，若負載平均分攤，停掉 1 個後其餘 4 個各要多承擔 25%，所以平時每個 PDU 只能用到上限的 80%（5,280 W 的 80% ＝ 4,224 W，約相當於滑桿 64%）。這是我的推算，假設負載能完全平均轉移，實際上 2 顆 PSU 的設備掉一路時，剩下那顆要扛整台，不會平均。本工具<strong>不模擬</strong>此情境。</p>
+  </div>
+
   <div class="ref warn-box">
-    <h3>④ 限制與未驗證事項</h3>
+    <h3>⑤ 限制與未驗證事項</h3>
     <ul>
       <li><strong>PSU 平均分擔是簡化假設：</strong>每顆 PSU 的負載 ＝ 設備負載 ÷ PSU 顆數。實際上 PDU 或一路電源故障時，剩下的 PSU 會承擔更多（例如 2 顆 PSU 掉 1 顆，另一顆要扛整台）。本工具不模擬故障情境。<span class="tag-me">推論</span></li>
       <li><strong>連續負載的認定：</strong>機房設備通常長時間運轉，這裡一律當連續負載處理。<span class="tag-me">推論</span></li>
       <li><strong>80% 是針對「分路額定」：</strong>實際的上游斷路器與電路規格需依現場確認；PDU 的 24A 是廠商標示，不等於你案場的斷路器容量。</li>
       <li><strong>預估最大功耗是否為實際最大值：</strong>需以廠商規劃工具（如 HPE Power Advisor）或實測確認；CSV 中空白者不計入負載。</li>
       <li><strong>法規版本：</strong>引用的台灣條文來自第三方網站，請與全國法規資料庫核對現行版本。</li>
-      <li><strong>資料來源性質：</strong>上列多為廠商文件與社群討論，並非標準原文；LBNL 為 2001 年研究。本工具尚未對照 TIA-942、Uptime Tier 等標準原文，這部分<strong>未查證</strong>。</li>
+      <li><strong>資料來源性質：</strong>上列多為廠商文件與社群討論；LBNL 為 2001 年研究。</li>
+      <li><strong>標準全文仍未讀：</strong>TIA-942-C（2024）全文為付費文件，我沒有取得，所以無法確認標準本文是否另有規定；Uptime 的 Tier Standard 全文可在簽署 MOU 後免費下載，我也沒有下載閱讀。④ 只根據兩家官方網站上的文章。BICSI 002 等其他標準也沒有查。</li>
     </ul>
   </div>
 
