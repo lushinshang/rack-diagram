@@ -25,7 +25,8 @@
   h1 { font-size: 1.1rem; margin: 0; }
   .btn { background: var(--primary); color: #fff; border: 0; border-radius: 6px;
     padding: 0.45rem 0.9rem; font-size: 0.9rem; cursor: pointer; }
-  #csv-file-input { display: none; }
+  #csv-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0 0 0 0); }
+  label.btn { display: inline-block; user-select: none; }
   #msg { color: var(--muted); font-size: 0.85rem; }
   #msg.error { color: var(--danger); }
   main { padding: 16px; }
@@ -92,8 +93,8 @@
 <header>
   <h1>🗄️ 機櫃配置圖</h1>
   <span class="muted" id="basis-label"></span>
-  <button class="btn" id="btn-upload">📁 上傳 CSV</button>
-  <input type="file" id="csv-file-input" accept=".csv,text/csv">
+  <input type="file" id="csv-file-input" accept=".csv,text/csv,.txt">
+  <label class="btn" id="btn-upload" for="csv-file-input" tabindex="0" role="button">📁 上傳 CSV</label>
   <button class="btn btn-sec" id="btn-reset" disabled title="清除所有手動拖移，回到自動排櫃">↩ 還原自動排櫃</button>
   <label class="ratio-box">PDU 可用比例
     <input type="range" id="ratio" min="50" max="100" step="5" value="80">
@@ -485,7 +486,10 @@
 
   $('btn-reset').addEventListener('click', () => { clearPins(); render(); });
   $('ratio').addEventListener('input', () => { clearPins(); render(); });
-  $('btn-upload').addEventListener('click', () => $('csv-file-input').click());
+  // 鍵盤操作：label 取得焦點時按 Enter／空白鍵也能開啟檔案視窗
+  $('btn-upload').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('csv-file-input').click(); }
+  });
   $('csv-file-input').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -499,8 +503,8 @@
       } catch (err) {
         currentItems = null;
         clearPins();
-        $('racks').innerHTML = '';
-        $('empty').style.display = '';
+        $('racks').innerHTML = `<div class="rack-warn top-warn">⚠️ 無法讀取「${esc(file.name)}」：${esc(err.message)}</div>`;
+        $('empty').style.display = 'none';
         $('btn-reset').disabled = true;
         setMsg(err.message, true);
       }
