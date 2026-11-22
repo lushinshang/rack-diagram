@@ -1,0 +1,28 @@
+﻿部門,項目名稱,廠牌,型號,U數,數量,PSU配置,單台預估最大功耗(W)
+單位A,網管設備,Arista,Arista 7050X3,1U,2,343W x 2,343W
+單位A,伺服器,HPE,HPE DL380 Gen11,2U,1,800W x 2,800W
+單位A,儲存設備,NetApp,NetApp FAS2820,2U,1,1100W x 2,1100W
+單位A,儲存設備,NetApp,NetApp DS212C,2U,2,1100W x 2,1100W
+單位B,網管設備,Arista,Arista 7050X3,1U,2,343W x 2,343W
+單位B,GPU 伺服器,HPE,HPE DL380a Gen12,4U,2,2400W x 5,10000W
+單位B,儲存設備,NetApp,NetApp AFF-C30,2U,1,628W x 2,1303W
+單位B,儲存設備,NetApp,NetApp NS224,2U,1,1600W x 2,
+單位B,儲存設備,NetApp,NetApp FAS2820,2U,1,1100W x 2,1100W
+單位B,儲存設備,NetApp,NetApp DS212C,2U,2,1100W x 2,1100W
+單位C,網管設備,Arista,Arista 7050X3,1U,2,343W x 2,343W
+單位C,伺服器,HPE,HPE DL380 Gen11,2U,10,800W x 2,800W
+單位C,GPU 伺服器,HPE,HPE DL380a Gen12,4U,2,2400W x 5,10000W
+單位C,儲存設備,NetApp,NetApp AFF-C30,2U,1,628W x 2,1303W
+單位C,儲存設備,NetApp,NetApp NS224,2U,1,1600W x 2,
+單位C,儲存設備,NetApp,NetApp FAS2820,2U,1,1100W x 2,1100W
+單位C,儲存設備,NetApp,NetApp DS212C,2U,2,1100W x 2,1100W
+單位D,網管設備,Cisco,Cisco C9200L-24T,1U,1,125W x 1,125W
+單位D,低階伺服器,HPE,HPE DL380 Gen11,2U,1,800W x 2,800W
+單位D,中階伺服器,HPE,HPE DL380 Gen11,2U,3,800W x 2,800W
+單位D,網管設備,Arista,Arista 7050X3,1U,1,343W x 2,343W
+單位D,儲存設備(Used 500T),QSAN,QSAN XN8116D_8C,4U,1,850W x 2,850W
+單位D,儲存設備,QSAN,QSAN DiskSelf,4U,1,,
+單向閘道機制,網管設備,QSAN,QSAN 25G Switch,1U,4,,
+單向閘道機制,伺服器,HPE,HPE DL380 Gen11,2U,4,800W x 2,800W
+單向閘道機制,單向閘道機制,DataFlowx,DataFlowx DDX 10G,2U,3,650W x 4,1950W
+單向閘道機制,儲存設備(SSD 3.84T x 12),QSAN,QSAN XN4226D-8C,2U,1,850W x 2,812W

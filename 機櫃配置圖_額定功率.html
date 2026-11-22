@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>機櫃配置圖（額定功率）</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --panel: #ffffff; --text: #1e293b; --muted: #64748b; --line: #cbd5e1;
+    --rack: #e2e8f0; --net: #bfdbfe; --srv: #e5e7eb; --sto: #bbf7d0; --oth: #fde68a;
+    --danger: #dc2626; --primary: #2563eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --line: #475569;
+      --rack: #334155; --net: #1e40af; --srv: #475569; --sto: #166534; --oth: #854d0e;
+      --danger: #f87171; --primary: #60a5fa;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    padding: 0.75rem 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.1rem; margin: 0; }
+  .btn { background: var(--primary); color: #fff; border: 0; border-radius: 6px;
+    padding: 0.45rem 0.9rem; font-size: 0.9rem; cursor: pointer; }
+  #csv-file-input { display: none; }
+  #msg { color: var(--muted); font-size: 0.85rem; }
+  #msg.error { color: var(--danger); }
+  main { padding: 16px; }
+  #empty { text-align: center; color: var(--muted); padding: 4rem 1rem; }
+  #racks { display: flex; gap: 20px; align-items: flex-start; overflow-x: auto; padding-bottom: 12px; }
+  .rack-col { flex: 0 0 300px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px; }
+  .rack-title { font-weight: 700; text-align: center; margin-bottom: 6px; }
+  .rack-warn { background: var(--danger); color: #fff; border-radius: 4px; padding: 3px 6px;
+    font-size: 0.8rem; margin-bottom: 6px; }
+  .rack-frame { display: flex; }
+  .rack-ruler { width: 22px; flex: none; }
+  .rack-ruler div { height: 18px; font-size: 10px; line-height: 18px; text-align: right;
+    padding-right: 3px; color: var(--muted); }
+  .rack-body { position: relative; flex: 1; height: 738px; background: var(--rack);
+    border: 2px solid var(--line); border-radius: 3px; }
+  .dev { position: absolute; left: 2px; right: 2px; border: 1px solid var(--line); border-radius: 2px;
+    font-size: 11px; line-height: 1.2; padding: 1px 4px; overflow: hidden; display: flex;
+    align-items: center; white-space: nowrap; text-overflow: ellipsis; }
+  .dev.cat0 { background: var(--net); } .dev.cat1 { background: var(--srv); }
+  .dev.cat2 { background: var(--sto); } .dev.cat3 { background: var(--oth); }
+  .dev.nodata { border-style: dashed; border-color: var(--muted); }
+  .dev .unfilled { margin-left: 6px; font-style: normal; font-size: 10px; color: var(--muted); flex: none; }
+  .dev .dev-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .dev .dev-dept { flex: none; margin-left: 6px; font-size: 10px; color: var(--muted); }
+  .rack-stats { margin-top: 8px; font-size: 0.85rem; line-height: 1.6; }
+  .rack-stats strong { font-size: 1rem; }
+  .rack-stats .note { color: var(--muted); font-size: 0.78rem; }
+  .rack-extra { margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
+  .ratio-box { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+  .ratio-box input { width: 180px; }
+  .muted { color: var(--muted); font-size: 0.8rem; }
+  .top-warn { margin: 0 0 12px; }
+  .top-warn ul { margin: 4px 0 0; padding-left: 1.2rem; font-weight: normal; }
+  .dev.moved { box-shadow: inset 3px 0 0 var(--primary); }
+  .dev .tag { margin-left: 6px; flex: none; font-size: 10px; color: var(--muted); font-style: normal; }
+  .pdu-wrap { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .pdu { margin-bottom: 6px; font-size: 0.78rem; }
+  .pdu-head { display: flex; justify-content: space-between; gap: 6px; }
+  .pdu-bar { height: 8px; background: var(--rack); border-radius: 4px; overflow: hidden; margin: 2px 0; }
+  .pdu-fill { height: 100%; background: #16a34a; }
+  .pdu-fill.hot { background: #f59e0b; } .pdu-fill.full { background: var(--danger); }
+  .pdu details summary { cursor: pointer; color: var(--muted); }
+  .port-list { margin: 2px 0 0; padding: 0; list-style: none; line-height: 1.5; }
+  .port-list li { display: flex; justify-content: space-between; gap: 6px; }
+  .moved-in { margin-top: 6px; font-size: 0.78rem; color: var(--primary); }
+  .pinned-in { margin-top: 6px; font-size: 0.78rem; color: #b45309; }
+  .dev[draggable="true"] { cursor: grab; }
+  .dev.dragging { opacity: 0.4; }
+  .dev.pinned { box-shadow: inset 3px 0 0 #f59e0b; }
+  .dev.over { border-color: var(--danger); border-width: 2px; }
+  .rack-col.drop-target { outline: 2px dashed var(--primary); outline-offset: 2px; }
+  .ru-over { color: var(--danger); font-weight: 700; }
+  .u41-line { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed var(--danger); pointer-events: none; }
+  .btn-sec { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+  .btn-sec:disabled { opacity: 0.4; cursor: not-allowed; }
+  .bad { color: var(--danger); }
+  .pdu-head { flex-wrap: wrap; }
+  .pdu-fill.over { background: var(--danger); }
+  .rack-warn .viol { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🗄️ 機櫃配置圖</h1>
+  <span class="muted" id="basis-label"></span>
+  <button class="btn" id="btn-upload">📁 上傳 CSV</button>
+  <input type="file" id="csv-file-input" accept=".csv,text/csv">
+  <button class="btn btn-sec" id="btn-reset" disabled title="清除所有手動拖移，回到自動排櫃">↩ 還原自動排櫃</button>
+  <label class="ratio-box">PDU 可用比例
+    <input type="range" id="ratio" min="50" max="100" step="5" value="80">
+    <strong id="ratio-text">80%</strong>
+    <span id="ratio-cap" class="muted"></span>
+  </label>
+  <span id="msg"></span>
+</header>
+<main>
+  <div id="empty">請點擊「上傳 CSV」載入設備清單（部門、項目名稱、廠牌、型號、U數、數量、PSU配置、單台預估最大功耗(W)）</div>
+  <div id="racks"></div>
+</main>
+<script id="logic">
+  const RACK_U = 41;
+
+  function parseCSVRows(text) {
+    const lines = [];
+    let row = [''];
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i], nx = text[i + 1];
+      if (ch === '"') {
+        if (inQuotes && nx === '"') { row[row.length - 1] += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (ch === ',' && !inQuotes) {
+        row.push('');
+      } else if ((ch === '\r' || ch === '\n') && !inQuotes) {
+        if (ch === '\r' && nx === '\n') i++;
+        if (row.length > 1 || row[0] !== '') lines.push(row.map(c => c.trim()));
+        row = [''];
+      } else {
+        row[row.length - 1] += ch;
+      }
+    }
+    if (row.length > 1 || row[0] !== '') lines.push(row.map(c => c.trim()));
+    return lines;
+  }
+
+  function parseU(str) {
+    const s = String(str || '').trim();
+    if (s === '' || s.includes('直立') || s.includes('螢幕')) return 0;
+    const m = s.match(/(\d+)\s*U/i);
+    if (m) return parseInt(m[1], 10);
+    const n = parseInt(s, 10);
+    return isNaN(n) ? 0 : n;
+  }
+
+  // 空白或無數字回傳 null（代表「未填」），與 0 區分
+  function parseWatt(str) {
+    const m = String(str || '').replace(/,/g, '').match(/\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : null;
+  }
+
+  function parsePsuCount(str) {
+    const m = String(str || '').match(/[xX×]\s*(\d+)/);
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  // 「2400W x 5」→ 2400（單顆 PSU 額定功率）；沒有則 null
+  function parsePsuRated(str) {
+    const m = String(str || '').replace(/,/g, '').match(/(\d+(\.\d+)?)\s*W/i);
+    return m ? parseFloat(m[1]) : null;
+  }
+
+  // 解析 CSV → 設備種類陣列。缺必要欄位時 throw Error（訊息給使用者看）
+  function parseCSV(text) {
+    const rows = parseCSVRows(text.replace(/^﻿/, ''));
+    if (rows.length < 2) throw new Error('CSV 沒有資料列');
+    const headers = rows[0];
+    const idx = (keys) => headers.findIndex(h => keys.some(k => h.includes(k)));
+    const col = {
+      unit: idx(['部門', '單位']), name: idx(['項目名稱', '名稱']), brand: idx(['廠牌', '品牌']),
+      model: idx(['型號']), u: idx(['U數']), qty: idx(['數量']),
+      psu: idx(['PSU配置']), watt: idx(['單台預估最大功耗'])
+    };
+    const labels = { unit: '部門', model: '型號', u: 'U數', qty: '數量' };
+    const missing = Object.keys(labels).filter(k => col[k] === -1).map(k => labels[k]);
+    if (missing.length) throw new Error('CSV 缺少必要欄位：' + missing.join('、'));
+    const get = (r, k) => (col[k] === -1 ? '' : (r[col[k]] || ''));
+    const items = [];
+    for (const r of rows.slice(1)) {
+      if (!get(r, 'model') && !get(r, 'name')) continue;
+      const qty = Math.max(1, Math.round(parseFloat(get(r, 'qty')) || 1));
+      items.push({
+        unit: get(r, 'unit') || '未分類', name: get(r, 'name'), brand: get(r, 'brand'),
+        model: get(r, 'model'), u: parseU(get(r, 'u')), qty,
+        psuCount: parsePsuCount(get(r, 'psu')), psuRatedW: parsePsuRated(get(r, 'psu')),
+        powerW: parseWatt(get(r, 'watt'))
+      });
+    }
+    if (items.length === 0) throw new Error('CSV 沒有有效的設備列');
+    return items;
+  }
+
+  // 類別排序：網管 → 伺服器 → 儲存 → 其他
+  function categoryOf(name) {
+    if (/網管|交換|Switch/i.test(name)) return 0;
+    if (/伺服器|GPU|運算|閘道/.test(name)) return 1;
+    if (/儲存/.test(name)) return 2;
+    return 3;
+  }
+
+  const PDU_COUNT = 5, PDU_PORTS = 8, PDU_MAX_W = 6600, GATEWAY_RACK = '單向閘道機制';
+
+  // 負載基準：'estimated' = 預估最大功耗 ÷ 迴路數（PSU 顆數）；'rated' = PSU 額定功率。
+  // 兩份 html 只差這三行與 <title>。
+  const BASIS = 'rated';
+  const BASIS_LABEL = 'PSU 額定功率';
+  const ALT_LABEL = '預估最大功耗';
+
+  function psuEstW(d) {
+    return d.powerW != null && d.psuCount ? d.powerW / d.psuCount : 0;
+  }
+  function psuRatedLoadW(d) {   // 沒有額定值時退回預估值
+    return d.psuRatedW || psuEstW(d);
+  }
+  function psuLoadW(d) {
+    return BASIS === 'rated' ? psuRatedLoadW(d) : psuEstW(d);
+  }
+  function psuAltW(d) {         // 參考欄：另一種基準的數值
+    return BASIS === 'rated' ? psuEstW(d) : (d.psuRatedW || 0);
+  }
+
+  function homeRackOf(it) {
+    return /閘道/.test(it.name) || /閘道/.test(it.unit) ? GATEWAY_RACK : it.unit;
+  }
+
+  // 自動排櫃＋PDU 分配。ratio：PDU 可用比例（0.5–1）。
+  // 硬限制：PDU 負載、PDU 插孔數、同設備各 PSU 分在不同 PDU、機櫃 41U。
+  // pins：{設備id: 機櫃名}，使用者手動指定的設備（強制放入，違規時回報於 rack.violations）。
+  function allocate(items, ratio, pins = {}) {
+    const cap = PDU_MAX_W * ratio;
+    const EPS = 1e-6;
+    const order = [];
+    items.forEach(it => { const k = homeRackOf(it); if (!order.includes(k)) order.push(k); });
+    if (order.includes(GATEWAY_RACK)) order.push(order.splice(order.indexOf(GATEWAY_RACK), 1)[0]);
+    const racks = order.map(unit => ({
+      unit, usedU: 0, devices: [],
+      pdus: Array.from({ length: PDU_COUNT }, () => ({ load: 0, altSum: 0, ports: [] }))
+    }));
+
+    const devices = [];
+    items.forEach((it, seq) => {
+      for (let n = 0; n < it.qty; n++) {
+        devices.push({ ...it, id: seq + '-' + n, seq, home: homeRackOf(it), cat: categoryOf(it.name), w: psuLoadW(it) });
+      }
+    });
+    devices.forEach(d => { d.pinned = !!pins[d.id] && order.includes(pins[d.id]); });
+    const byLoad = (a, b) => b.w - a.w || (b.psuCount || 0) - (a.psuCount || 0) || a.seq - b.seq;
+    const queue = devices.filter(d => !d.pinned).sort(byLoad);
+
+    const unplaced = [];
+    const tryPlace = (rack, d) => {
+      const k = d.psuCount || 0;
+      if (d.u > 0 && rack.usedU + d.u > RACK_U) return false;
+      let chosen = [];
+      if (k > 0) {
+        const eligible = rack.pdus.map((p, i) => ({ p, i }))
+          .filter(x => x.p.ports.length < PDU_PORTS && x.p.load + d.w <= cap + EPS)
+          .sort((a, b) => a.p.load - b.p.load || a.i - b.i);
+        if (eligible.length < k) return false;
+        chosen = eligible.slice(0, k);
+      }
+      chosen.forEach((x, idx) => {
+        x.p.load += d.w;
+        x.p.altSum += psuAltW(d);
+        x.p.ports.push({ dev: d, psu: idx + 1, w: d.w, alt: psuAltW(d) });
+      });
+      rack.usedU += d.u;
+      rack.devices.push(d);
+      return true;
+    };
+    // 手動指定：不受硬限制約束，PSU 接到「插孔未滿且負載最低」的 PDU；PSU > 5 顆時重複使用 PDU。
+    const forcePlace = (rack, d) => {
+      const k = d.psuCount || 0;
+      const byFree = rack.pdus.map((p, i) => ({ p, i })).sort((a, b) =>
+        (a.p.ports.length >= PDU_PORTS) - (b.p.ports.length >= PDU_PORTS) || a.p.load - b.p.load || a.i - b.i);
+      for (let idx = 0; idx < k; idx++) {
+        const x = byFree[idx % PDU_COUNT];
+        x.p.load += d.w;
+        x.p.altSum += psuAltW(d);
+        x.p.ports.push({ dev: d, psu: idx + 1, w: d.w, alt: psuAltW(d) });
+      }
+      rack.usedU += d.u;
+      rack.devices.push(d);
+    };
+    const headroom = (r) => PDU_COUNT * cap - r.pdus.reduce((s, p) => s + p.load, 0);
+
+    devices.filter(d => d.pinned).sort(byLoad)
+      .forEach(d => forcePlace(racks.find(r => r.unit === pins[d.id]), d));
+
+    for (const d of queue) {
+      if ((d.psuCount || 0) > PDU_COUNT) {
+        unplaced.push({ dev: d, reason: `PSU 顆數 ${d.psuCount} 超過每櫃 ${PDU_COUNT} 個 PDU` });
+        continue;
+      }
+      const home = racks.find(r => r.unit === d.home);
+      const others = racks.filter(r => r !== home).sort((a, b) => headroom(b) - headroom(a));
+      if (![home, ...others].some(r => tryPlace(r, d))) {
+        unplaced.push({ dev: d, reason: '所有機櫃的 PDU 負載、插孔或 U 數都放不下' });
+      }
+    }
+
+    racks.forEach(r => {
+      r.devices.sort((a, b) => a.cat - b.cat || a.seq - b.seq);
+      const modelCount = {};
+      r.devices.forEach(d => { modelCount[d.model] = (modelCount[d.model] || 0) + 1; });
+      const modelSeen = {};
+      let cursor = 1;
+      r.placed = [];
+      r.outside = [];
+      r.devices.forEach(d => {
+        modelSeen[d.model] = (modelSeen[d.model] || 0) + 1;
+        d.label = modelCount[d.model] > 1 ? `${d.model}-${modelSeen[d.model]}` : d.model;
+        d.moved = d.home !== r.unit;
+        if (d.u > 0) { r.placed.push({ ...d, start: cursor, over: cursor + d.u - 1 > RACK_U }); cursor += d.u; }
+        else r.outside.push(d);
+      });
+      r.layoutU = Math.max(RACK_U, cursor - 1);
+      r.violations = [];
+      r.pdus.forEach((p, i) => {
+        if (p.load > cap + EPS) r.violations.push({ type: 'pdu', index: i, over: p.load - cap });
+        if (p.ports.length > PDU_PORTS) r.violations.push({ type: 'ports', index: i, over: p.ports.length - PDU_PORTS });
+      });
+      if (r.usedU > RACK_U) r.violations.push({ type: 'u', over: r.usedU - RACK_U });
+      r.devices.filter(d => (d.psuCount || 0) > PDU_COUNT)
+        .forEach(d => r.violations.push({ type: 'psu', dev: d, k: d.psuCount }));
+      const known = r.devices.filter(d => d.powerW !== null);
+      r.deviceCount = r.devices.length;
+      r.totalW = known.reduce((s, d) => s + d.powerW, 0);
+      r.psuTotal = r.devices.reduce((s, d) => s + (d.psuCount || 0), 0);
+      r.unknownCount = r.devices.length - known.length;
+      r.movedIn = r.devices.filter(d => d.moved);
+    });
+    return { racks, unplaced, cap, ratio };
+  }
+
+  // 快照目前版面：{設備id: 所在櫃}。拖移時用它固定「其他設備」的位置。
+  function snapshotPins(R) {
+    const m = {};
+    R.racks.forEach(r => r.devices.forEach(d => { m[d.id] = r.unit; }));
+    return m;
+  }
+</script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const U_PX = 18;
+  $('basis-label').textContent = '負載基準：' + BASIS_LABEL;
+  let currentItems = null;
+  let pins = {};   // 固定位置：{設備id: 機櫃名}（拖移後＝全部設備的快照＋被拖的設備）
+  let lastR = null;                 // 最近一次 allocate 結果
+  const userMoved = new Set();      // 使用者親手拖過的設備 id（只有這些顯示 ✋）
+
+  function setMsg(text, isError) {
+    $('msg').textContent = text;
+    $('msg').className = isError ? 'error' : '';
+  }
+
+  function devTitle(d) {
+    return ['部門 ' + d.unit, d.name, d.brand, d.model, d.u + 'U',
+      d.psuCount != null ? 'PSU×' + d.psuCount : 'PSU 未填',
+      d.psuRatedW != null ? '額定 ' + d.psuRatedW + 'W' : '',
+      d.powerW != null ? '最大 ' + d.powerW + 'W' : '功耗未填',
+      d.moved ? '↪ 來自 ' + d.home : ''].filter(Boolean).join(' / ');
+  }
+
+  function renderPdu(p, i, cap, r) {
+    const pct = p.load / PDU_MAX_W * 100;               // 顯示比例：分母固定 6,600 W
+    const capPct = cap > 0 ? p.load / cap * 100 : 0;    // 顏色警示：相對於滑桿設定的上限
+    const vOver = r.violations.find(v => v.type === 'pdu' && v.index === i);
+    const vPorts = r.violations.find(v => v.type === 'ports' && v.index === i);
+    const cls = vOver ? 'full over' : capPct >= 99.5 ? 'full' : capPct >= 90 ? 'hot' : '';
+    const ports = p.ports.map((pt, n) =>
+      `<li><span>Port-${n + 1} ${esc(pt.dev.label)} PW${pt.psu}</span><span>${Math.round(pt.w).toLocaleString()} W</span></li>`).join('');
+    const bad = (vOver ? ` <b class="bad">超載 ${Math.round(vOver.over).toLocaleString()} W</b>` : '') +
+      (vPorts ? ` <b class="bad">超出 ${vPorts.over} 孔</b>` : '');
+    return `<div class="pdu">
+      <div class="pdu-head"><strong>PDU-${i + 1}</strong>
+        <span>${Math.round(p.load).toLocaleString()} W（${pct.toFixed(0)}%）· ${p.ports.length}/${PDU_PORTS} 孔${bad}</span></div>
+      <div class="pdu-bar"><div class="pdu-fill ${cls}" style="width:${Math.min(100, pct)}%"></div></div>
+      <div class="muted">${ALT_LABEL}合計 ${Math.round(p.altSum).toLocaleString()} W</div>
+      <details data-key="${esc(r.unit)}|${i}"><summary>插孔明細</summary><ul class="port-list">${ports || '<li>（無）</li>'}</ul></details>
+    </div>`;
+  }
+
+  function violText(v) {
+    if (v.type === 'pdu') return `PDU-${v.index + 1} 超載 ${Math.round(v.over).toLocaleString()} W`;
+    if (v.type === 'ports') return `PDU-${v.index + 1} 插孔超出 ${v.over} 孔`;
+    if (v.type === 'u') return `機櫃超過 ${RACK_U}U，溢出 ${v.over}U`;
+    return `${v.dev.label} 有 ${v.k} 顆 PSU，超過 ${PDU_COUNT} 個 PDU，部分 PSU 重複接在同一個 PDU`;
+  }
+
+  function renderRack(r, cap) {
+    const ruler = Array.from({ length: r.layoutU }, (_, i) =>
+      `<div${i >= RACK_U ? ' class="ru-over"' : ''}>${i + 1}</div>`).join('');
+    const devs = r.placed.map(d =>
+      `<div class="dev cat${d.cat}${d.powerW == null ? ' nodata' : ''}${d.moved ? ' moved' : ''}${userMoved.has(d.id) ? ' pinned' : ''}${d.over ? ' over' : ''}" ` +
+      `draggable="true" data-id="${esc(d.id)}" ` +
+      `style="top:${(d.start - 1) * U_PX}px;height:${d.u * U_PX - 1}px" title="${esc(devTitle(d))}">` +
+      `<span class="dev-name">${esc(d.label || d.model || d.name)}</span>` +
+      `<span class="dev-dept">${esc(d.unit)}</span>` +
+      `${userMoved.has(d.id) ? '<em class="tag">✋</em>' : ''}` +
+      `${d.moved ? '<em class="tag">↪</em>' : ''}` +
+      `${d.powerW == null ? '<em class="unfilled">未填</em>' : ''}</div>`).join('');
+    const line41 = r.layoutU > RACK_U ? `<div class="u41-line" style="top:${RACK_U * U_PX}px"></div>` : '';
+    const out = r.outside.length
+      ? `<div class="rack-extra"><strong>機櫃外（0U）：</strong>${esc(r.outside.map(d => d.label).join('、'))}</div>` : '';
+    const moved = r.movedIn.length
+      ? `<div class="moved-in">↪ 搬入：${esc(r.movedIn.map(d => d.label + '（來自 ' + d.home + '）').join('、'))}</div>` : '';
+    const pinnedHere = r.devices.filter(d => userMoved.has(d.id));
+    const pinned = pinnedHere.length
+      ? `<div class="pinned-in">✋ 手動指定：${esc(pinnedHere.map(d => d.label).join('、'))}</div>` : '';
+    const unk = r.unknownCount
+      ? `<div class="note">另有 ${r.unknownCount} 台功耗未填，未計入總功耗</div>` : '';
+    const warn = r.violations.length
+      ? `<div class="rack-warn">⚠️ 超出限制：${r.violations.map(v => `<span class="viol">・${esc(violText(v))}</span>`).join('')}</div>` : '';
+    return `<section class="rack-col" data-unit="${esc(r.unit)}">
+      <div class="rack-title">${esc(r.unit)}</div>${warn}
+      <div class="rack-frame"><div class="rack-ruler">${ruler}</div><div class="rack-body" style="height:${r.layoutU * U_PX}px">${devs}${line41}</div></div>
+      <div class="rack-stats">
+        <div>已用 <strong>${r.usedU}</strong> / ${RACK_U}U（${r.deviceCount} 台）</div>
+        <div>總功耗 <strong>${Math.round(r.totalW).toLocaleString()} W</strong>（${(r.totalW / 1000).toFixed(2)} kW）</div>
+        <div>PSU 顆數 <strong>${r.psuTotal}</strong></div>${unk}
+      </div>${pinned}${moved}${out}
+      <div class="pdu-wrap">${r.pdus.map((p, i) => renderPdu(p, i, cap, r)).join('')}</div></section>`;
+  }
+
+  function render() {
+    if (!currentItems) return;
+    const openKeys = new Set([...document.querySelectorAll('details[open]')].map(d => d.dataset.key));
+    const ratio = parseInt($('ratio').value, 10) / 100;
+    const R = allocate(currentItems, ratio, pins);
+    lastR = R;
+    $('ratio-text').textContent = Math.round(ratio * 100) + '%';
+    $('ratio-cap').textContent = `（每個 PDU 上限 ${Math.round(R.cap).toLocaleString()} W）`;
+    $('empty').style.display = 'none';
+    const pinCount = R.racks.reduce((s, r) => s + r.devices.filter(d => userMoved.has(d.id)).length, 0);
+    $('btn-reset').disabled = pinCount === 0;
+    $('btn-reset').textContent = pinCount ? `↩ 還原自動排櫃（已手動指定 ${pinCount} 台）` : '↩ 還原自動排櫃';
+    const warn = R.unplaced.length
+      ? `<div class="rack-warn top-warn">⚠️ 有 ${R.unplaced.length} 台設備無法放置：<ul>` +
+        R.unplaced.map(u => `<li>${esc(u.dev.model || u.dev.name)}（${esc(u.dev.home)}）：${esc(u.reason)}</li>`).join('') +
+        '</ul></div>' : '';
+    $('racks').innerHTML = warn + R.racks.map(r => renderRack(r, R.cap)).join('');
+    document.querySelectorAll('details[data-key]').forEach(d => { if (openKeys.has(d.dataset.key)) d.open = true; });
+  }
+
+  function clearPins() { pins = {}; userMoved.clear(); }
+
+  // 拖放（事件委派：重畫後不用重綁）
+  const racksEl = $('racks');
+  racksEl.addEventListener('dragstart', (e) => {
+    const dev = e.target.closest && e.target.closest('.dev');
+    if (!dev) return;
+    e.dataTransfer.setData('text/plain', dev.dataset.id);
+    e.dataTransfer.effectAllowed = 'move';
+    dev.classList.add('dragging');
+  });
+  racksEl.addEventListener('dragend', () => {
+    document.querySelectorAll('.dragging').forEach(x => x.classList.remove('dragging'));
+    document.querySelectorAll('.drop-target').forEach(x => x.classList.remove('drop-target'));
+  });
+  racksEl.addEventListener('dragover', (e) => {
+    const col = e.target.closest && e.target.closest('.rack-col');
+    if (!col) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.drop-target').forEach(x => { if (x !== col) x.classList.remove('drop-target'); });
+    col.classList.add('drop-target');
+  });
+  racksEl.addEventListener('dragleave', (e) => {
+    const col = e.target.closest && e.target.closest('.rack-col');
+    if (col && !col.contains(e.relatedTarget)) col.classList.remove('drop-target');
+  });
+  racksEl.addEventListener('drop', (e) => {
+    const col = e.target.closest && e.target.closest('.rack-col');
+    if (!col) return;
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    col.classList.remove('drop-target');
+    if (!id) return;
+    if (lastR) pins = snapshotPins(lastR);   // 其他設備固定在目前位置
+    pins[id] = col.dataset.unit;
+    userMoved.add(id);
+    render();
+  });
+
+  $('btn-reset').addEventListener('click', () => { clearPins(); render(); });
+  $('ratio').addEventListener('input', () => { clearPins(); render(); });
+  $('btn-upload').addEventListener('click', () => $('csv-file-input').click());
+  $('csv-file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        currentItems = parseCSV(evt.target.result);
+        clearPins();
+        render();
+        setMsg(`已載入 ${currentItems.length} 項`, false);
+      } catch (err) {
+        currentItems = null;
+        clearPins();
+        $('racks').innerHTML = '';
+        $('empty').style.display = '';
+        $('btn-reset').disabled = true;
+        setMsg(err.message, true);
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+    e.target.value = '';
+  });
+</script>
+</body>
+</html>

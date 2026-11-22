@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>機櫃配置圖 入口</title>
+<style>
+  :root { --bg:#f4f6f9; --panel:#ffffff; --text:#1e293b; --muted:#64748b; --line:#cbd5e1; --primary:#2563eb; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f172a; --panel:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --line:#475569; --primary:#60a5fa; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 48px 16px; }
+  h1 { font-size: 1.4rem; margin: 0 0 6px; }
+  p.lead { color: var(--muted); margin: 0 0 24px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  a.card { display: block; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px; color: inherit; text-decoration: none; }
+  a.card:hover { border-color: var(--primary); }
+  .card h2 { margin: 0 0 8px; font-size: 1.1rem; color: var(--primary); }
+  .card p { margin: 6px 0; font-size: 0.92rem; line-height: 1.6; }
+  .card .muted { color: var(--muted); }
+  h2.sec { font-size: 1.15rem; margin: 40px 0 6px; }
+  .sec-lead { color: var(--muted); margin: 0 0 16px; font-size: 0.9rem; }
+  .ref { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+  .ref h3 { margin: 0 0 8px; font-size: 1rem; }
+  .ref p, .ref li { font-size: 0.9rem; line-height: 1.7; margin: 4px 0; }
+  .ref ul { margin: 4px 0; padding-left: 1.2rem; }
+  .ref a { color: var(--primary); }
+  .ref blockquote { margin: 8px 0; padding: 6px 12px; border-left: 3px solid var(--primary); color: var(--muted); font-size: 0.88rem; }
+  table.map { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 8px 0; }
+  table.map th, table.map td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+  table.map th { background: var(--bg); }
+  .tag-me { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 4px; }
+  .warn-box { border-color: #f59e0b; }
+  .note { margin-top: 24px; color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🗄️ 機櫃配置圖</h1>
+  <p class="lead">上傳設備 CSV，自動排櫃並計算每個 PDU 的負載。請選擇負載基準：</p>
+  <div class="cards">
+    <a class="card" href="%E6%A9%9F%E6%AB%83%E9%85%8D%E7%BD%AE%E5%9C%96_%E9%A0%90%E4%BC%B0%E6%9C%80%E5%A4%A7%E5%8A%9F%E8%80%97.html">
+      <h2>預估最大功耗</h2>
+      <p>每個插孔的負載 ＝ 設備預估最大功耗 ÷ 迴路數（PSU 顆數）。</p>
+      <p class="muted">一般機房容量規劃的做法，較貼近實際用電；DL380a 每孔 2,000 W。</p>
+    </a>
+    <a class="card" href="%E6%A9%9F%E6%AB%83%E9%85%8D%E7%BD%AE%E5%9C%96_%E9%A1%8D%E5%AE%9A%E5%8A%9F%E7%8E%87.html">
+      <h2>額定功率</h2>
+      <p>每個插孔的負載 ＝ PSU 銘牌額定功率。</p>
+      <p class="muted">最保守的最壞情況，與手繪 PDU 電源分配表相同；DL380a 每孔 2,400 W。</p>
+    </a>
+  </div>
+  <p class="note">兩頁都是：每櫃 5 個 PDU、每個 8 孔、上限 6,600 W（220V × 30A），滑桿預設 80%（5,280 W）。</p>
+
+  <h2 class="sec">📚 相關規範與依據</h2>
+  <p class="sec-lead">下列是這個工具的上限、負載基準與冗餘設定所依據的規範與資料。標示「推論」的是我依資料做的推導，不是原文。</p>
+
+  <div class="ref">
+    <h3>① 為什麼上限不是 6,600 W：連續負載只能用到 80%</h3>
+    <p><strong>台灣：</strong>《用戶用電設備裝置規則》（原《屋內線路裝置規則》）：</p>
+    <blockquote>第 38 條第四款：分路供電給連續負載，不得大於分路額定百分之八十。<br>
+      名詞定義：連續負載，指可持續達三小時以上之最大電流負載。<br>
+      第 39 條第一款：分路導線之安培容量，不得小於連續負載一‧二五倍加上非連續負載之總和。</blockquote>
+    <p>條文取自第三方法規網站（頁面標示發布日期 114.05.09、全文 1,014 條）：<a href="https://6laws.net/6law/law3/%E7%94%A8%E6%88%B6%E7%94%A8%E9%9B%BB%E8%A8%AD%E5%82%99%E8%A3%9D%E7%BD%AE%E8%A6%8F%E5%89%87.htm" target="_blank" rel="noopener">6laws 全文</a>。<strong>正式條文請以<a href="https://law.moj.gov.tw/" target="_blank" rel="noopener">全國法規資料庫</a>為準。</strong></p>
+    <p><strong>美國：</strong>NEC 210.20(A) 的 80% 規則（等同 125% 規則），連續負載指持續 3 小時以上。<a href="https://www.ecmweb.com/basics/sizing-circuit-breaker" target="_blank" rel="noopener">EC&amp;M：Sizing a Circuit Breaker</a></p>
+    <p><strong>PDU 實例：</strong>Eaton／Tripp Lite 30A PDU 標示「Agency derated to 24A」（30A × 80%）。<a href="https://tripplite.eaton.com/products/products-compare/mids/PDUMV20HV,PDUMV30HV,PDUV30HV" target="_blank" rel="noopener">Tripp Lite 規格</a></p>
+  </div>
+
+  <div class="ref">
+    <h3>② 滑桿比例與瓦數的對照（220V × 30A ＝ 6,600 W）</h3>
+    <table class="map">
+      <tr><th>滑桿</th><th>每個 PDU 上限</th><th>意義</th><th>依據</th></tr>
+      <tr><td>100%</td><td>6,600 W</td><td>PDU 銘牌容量，非連續負載上限</td><td>220 V × 30 A</td></tr>
+      <tr><td><strong>80%（預設）</strong></td><td><strong>5,280 W</strong></td><td>連續負載上限（24 A × 220 V）</td><td>台灣第 38 條第四款；NEC 80% 規則；PDU 標示 24A</td></tr>
+      <tr><td>50%</td><td>3,300 W</td><td>雙路（A／B）冗餘，一路故障時另一路可承接</td><td>Belden：機櫃 PDU 不宜超過額定 50%</td></tr>
+      <tr><td>（低於滑桿範圍）40%</td><td>2,640 W</td><td>雙路冗餘再加 80% 連續負載折減</td><td>NANOG 討論串，需自行手算 <span class="tag-me">推論</span></td></tr>
+    </table>
+    <p>來源：<a href="https://www.belden.com/blog/exploring-dual-power-feeds-in-data-centers" target="_blank" rel="noopener">Belden：dual power feeds</a>、<a href="https://mailman.nanog.org/pipermail/nanog/2010-December/028667.html" target="_blank" rel="noopener">NANOG 討論串</a>。</p>
+  </div>
+
+  <div class="ref">
+    <h3>③ 兩種負載基準為什麼並存</h3>
+    <p><strong>預估最大功耗（規劃常用）：</strong>PSU 額定是銘牌上限，實際耗電通常較低；規劃用實際（或廠商估算的）最大功耗，避免電力與空調過度設計。</p>
+    <ul>
+      <li><a href="https://docs.nvidia.com/datacenter/dps/versions/latest/guides/concepts/provisioned-vs-observed-power.html" target="_blank" rel="noopener">NVIDIA DPS</a>：實際（observed）功耗幾乎總是低於配置（provisioned）功耗。</li>
+      <li><a href="https://datacenterknowledge.com/servers/how-server-power-supplies-are-wasting-your-money" target="_blank" rel="noopener">Data Center Knowledge</a>：以銘牌值規劃會放大成整個機房的過度設計。</li>
+      <li><a href="https://datacenters.lbl.gov/sites/default/files/Data%20Center%20Power%20Requirements_2001.pdf" target="_blank" rel="noopener">LBNL（2001 年研究）</a>：所測設備的實際功耗通常約為銘牌的 30%；依銘牌設計會使迴路與支援系統過大。（舊資料、小型設備，僅供參考）</li>
+      <li><a href="https://community.hpe.com/t5/servers-general/hp-power-advisor-power-sizing-for-proliant-servers/td-p/6689980" target="_blank" rel="noopener">HPE Power Advisor</a>：以重載實測資料為基礎的估算工具，用來選 PSU 與規劃機櫃；結果只是估算。</li>
+      <li><a href="https://dl.dell.com/manuals/all-products/esuprt_ser_stor_net/esuprt_poweredge/poweredge-m710_reference%20guide2_en-us.pdf" target="_blank" rel="noopener">Dell PowerEdge 參考指南</a>：PSU 額定是保守的規劃基準。</li>
+    </ul>
+    <p><strong>PSU 額定功率（最保守）：</strong>HP 的資料提到，部分地區的大型機房依法可能必須以 PSU 最大輸出（銘牌）規劃迴路。若你的契約或規範有這類要求，請使用「額定功率」頁。</p>
+  </div>
+
+  <div class="ref warn-box">
+    <h3>④ 限制與未驗證事項</h3>
+    <ul>
+      <li><strong>PSU 平均分擔是簡化假設：</strong>每顆 PSU 的負載 ＝ 設備負載 ÷ PSU 顆數。實際上 PDU 或一路電源故障時，剩下的 PSU 會承擔更多（例如 2 顆 PSU 掉 1 顆，另一顆要扛整台）。本工具不模擬故障情境。<span class="tag-me">推論</span></li>
+      <li><strong>連續負載的認定：</strong>機房設備通常長時間運轉，這裡一律當連續負載處理。<span class="tag-me">推論</span></li>
+      <li><strong>80% 是針對「分路額定」：</strong>實際的上游斷路器與電路規格需依現場確認；PDU 的 24A 是廠商標示，不等於你案場的斷路器容量。</li>
+      <li><strong>預估最大功耗是否為實際最大值：</strong>需以廠商規劃工具（如 HPE Power Advisor）或實測確認；CSV 中空白者不計入負載。</li>
+      <li><strong>法規版本：</strong>引用的台灣條文來自第三方網站，請與全國法規資料庫核對現行版本。</li>
+      <li><strong>資料來源性質：</strong>上列多為廠商文件與社群討論，並非標準原文；LBNL 為 2001 年研究。本工具尚未對照 TIA-942、Uptime Tier 等標準原文，這部分<strong>未查證</strong>。</li>
+    </ul>
+  </div>
+
+</main>
+</body>
+</html>
